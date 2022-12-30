@@ -2,7 +2,7 @@ FROM node:latest AS build-js
 
 RUN npm install gulp gulp-cli -g
 
-RUN git clone https://github.com/warhorse/gophish /build
+RUN git clone https://github.com/stevesec/gophish /build
 WORKDIR /build
 RUN npm install --only=dev
 RUN gulp
@@ -10,14 +10,14 @@ RUN gulp
 # Build Golang binary
 FROM golang:1.15.2 AS build-golang
 
-RUN git clone https://github.com/warhorse/gophish /go/src/github.com/warhorse/gophish
-WORKDIR /go/src/github.com/warhorse/gophish
+RUN git clone https://github.com/stevesec/gophish /go/src/github.com/stevesec/gophish
+WORKDIR /go/src/github.com/stevesec/gophish
 RUN go get -v && go build -v
 
 # Runtime container
 FROM debian:stable-slim
 
-ENV GITHUB_USER="gophish"
+ENV GITHUB_USER="stevesec"
 ENV GOPHISH_REPOSITORY="github.com/${GITHUB_USER}/gophish"
 ENV PROJECT_DIR="${GOPATH}/src/${GOPHISH_REPOSITORY}"
 
@@ -33,13 +33,15 @@ RUN apt-get update && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /opt/gophish
-COPY --from=build-golang /go/src/github.com/warhorse/gophish/ ./
+COPY --from=build-golang /go/src/github.com/stevesec/gophish/ ./
 COPY --from=build-js /build/static/js/dist/ ./static/js/dist/
 COPY --from=build-js /build/static/css/dist/ ./static/css/dist/
-COPY --from=build-golang /go/src/github.com/warhorse/gophish/config.json ./
+COPY --from=build-golang /go/src/github.com/stevesec/gophish/config.json ./
 COPY ./docker-entrypoint.sh /opt/gophish
 RUN chmod +x /opt/gophish/docker-entrypoint.sh
 RUN chown app. config.json docker-entrypoint.sh
+RUN find . -type f -exec sed -i "s|client_id|user_id|g" {} \;
+
 
 RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
 
@@ -61,9 +63,9 @@ ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
   org.label-schema.name="Gophish Docker" \
   org.label-schema.description="Gophish Docker Build" \
-  org.label-schema.url="https://github.com/war-horse/docker-gophish" \
+  org.label-schema.url="https://github.com/stevesec/docker-gophish" \
   org.label-schema.vcs-ref=$VCS_REF \
-  org.label-schema.vcs-url="https://github.com/war-horse/docker-gophish" \
-  org.label-schema.vendor="warhorse" \
+  org.label-schema.vcs-url="https://github.com/stevesec/docker-gophish" \
+  org.label-schema.vendor="stevesec" \
   org.label-schema.version=$VERSION \
   org.label-schema.schema-version="1.0"
