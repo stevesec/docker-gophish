@@ -4,6 +4,7 @@ RUN npm install gulp gulp-cli -g
 
 RUN git clone https://github.com/stevesec/gophish /build
 WORKDIR /build
+COPY . .
 RUN npm install --only=dev
 RUN gulp
 
@@ -40,14 +41,12 @@ COPY --from=build-golang /go/src/github.com/stevesec/gophish/config.json ./
 COPY ./docker-entrypoint.sh /opt/gophish
 RUN chmod +x /opt/gophish/docker-entrypoint.sh
 RUN chown app. config.json docker-entrypoint.sh
-RUN find . -type f -exec sed -i "s|client_id|user_id|g" {} \;
 
 
 RUN setcap 'cap_net_bind_service=+ep' /opt/gophish/gophish
 
 USER app
 RUN touch config.json.tmp
-
 
 EXPOSE 3333 8080
 
